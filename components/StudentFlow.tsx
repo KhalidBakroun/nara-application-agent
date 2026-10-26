@@ -115,7 +115,7 @@ export function StudentFlow() {
     }
   }
 
-  async function useSamples(paths: string[]) {
+  async function loadSamples(paths: string[]) {
     const files = await Promise.all(
       paths.map(async (p) => {
         const blob = await (await fetch(p)).blob();
@@ -235,7 +235,7 @@ export function StudentFlow() {
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             <span className="text-muted">وثائق تجريبية:</span>
             {Object.entries(SAMPLE_SETS).map(([name, paths]) => (
-              <button key={name} type="button" className="rounded-full border border-line px-3 py-1" onClick={() => void useSamples(paths)}>
+              <button key={name} type="button" className="rounded-full border border-line px-3 py-1" onClick={() => void loadSamples(paths)}>
                 {name}
               </button>
             ))}

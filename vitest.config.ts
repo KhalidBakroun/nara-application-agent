@@ -8,5 +8,8 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.{ts,tsx}"],
     environment: "node",
+    // The build laptop has 8 GB RAM and little of it free: one worker avoids out-of-memory crashes in jsdom.
+    pool: "threads",
+    maxWorkers: 1,
   },
 });
