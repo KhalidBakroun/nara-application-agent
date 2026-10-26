@@ -1,0 +1,44 @@
+[
+  {
+    "id": "lina",
+    "nameEn": "Lina",
+    "fullName": "لينا أحمد الخطيب",
+    "fullNameEn": "Lina Ahmad Al-Khatib",
+    "nationality": "Jordanian",
+    "tawjihiAverage": 92.1,
+    "stream": "scientific",
+    "graduationYear": 2026,
+    "englishTest": { "type": "IELTS", "score": 6.5 },
+    "targetCountries": ["UK", "Ireland"],
+    "fieldOfStudy": "computer_science",
+    "budgetUsdPerYear": 22000
+  },
+  {
+    "id": "omar",
+    "nameEn": "Omar",
+    "fullName": "عمر خالد النجار",
+    "fullNameEn": "Omar Khaled Al-Najjar",
+    "nationality": "Jordanian",
+    "tawjihiAverage": 78.4,
+    "stream": "literary",
+    "graduationYear": 2026,
+    "englishTest": { "type": "none" },
+    "targetCountries": ["Turkey", "Malaysia"],
+    "fieldOfStudy": "business",
+    "budgetUsdPerYear": 7000
+  },
+  {
+    "id": "sara",
+    "nameEn": "Sara",
+    "fullName": "سارة محمود العلي",
+    "fullNameEn": "Sara Mahmoud Al-Ali",
+    "nationality": "Jordanian",
+    "tawjihiAverage": 85.0,
+    "stream": "it",
+    "graduationYear": 2026,
+    "englishTest": { "type": "IELTS", "score": 6.0 },
+    "targetCountries": ["Netherlands", "Ireland"],
+    "fieldOfStudy": "computer_science",
+    "budgetUsdPerYear": 12000
+  }
+]
