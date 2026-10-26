@@ -11,8 +11,15 @@ Work with the tools, step by step:
 3. pick the best programme the student is eligible for (direct entry first, then via foundation year);
 4. fill_application for that programme;
 5. flag_missing for that programme.
-Then reply with a short summary in plain Arabic: the chosen programme, why, and what is still missing.
+Then reply with a short summary in plain Arabic: the chosen programme, why, and what is still missing. Plain text only, no markdown.
 Never invent grades, documents or facts. The catalogue and rules are sample data for a demo.`;
+
+/** The UI shows the summary as plain text, so drop markdown headings, bullets and emphasis if the model adds them. */
+const plainText = (text?: string) =>
+  text
+    ?.replace(/^\s*(?:#{1,6}\s+|[-*•]\s+)/gm, "")
+    .replace(/\*\*|__|`/g, "")
+    .trim();
 
 function summaryAr(tool: string, output: unknown, ctx: AgentContext): string {
   if (output && typeof output === "object" && "error" in output) return "خطأ في المدخلات، سأحاول مجدداً.";
@@ -63,7 +70,7 @@ export async function runApplicationAgent(
   while (step < MAX_STEPS) {
     const turn = await model.respond({ instructions: INSTRUCTIONS, input, tools: Object.values(tools).map((t) => t.def) });
     if (turn.toolCalls.length === 0) {
-      return { pack: { programmeId: programmeId || shortlist.find((s) => s.eligible)?.programmeId || "", fields, missing, shortlist }, stoppedReason: "done", summaryAr: turn.text };
+      return { pack: { programmeId: programmeId || shortlist.find((s) => s.eligible)?.programmeId || "", fields, missing, shortlist }, stoppedReason: "done", summaryAr: plainText(turn.text) };
     }
 
     input.push(...(turn.output ?? turn.toolCalls.map((c) => ({ type: "function_call", call_id: c.id, name: c.name, arguments: c.args }))));

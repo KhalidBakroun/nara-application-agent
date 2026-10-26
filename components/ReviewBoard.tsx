@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ApplicationField, ApplicationPack } from "@/lib/domain/types";
+import { evidenceView } from "@/lib/documents/evidence";
 import type { ExtractedDocument } from "@/lib/documents/extract";
 import { CONFIDENCE_AR, MISSING_AR, NEEDS_COUNSELLOR_AR } from "@/lib/labels";
 
@@ -22,15 +23,28 @@ function Evidence({ field, documents }: { field: ApplicationField; documents: Ex
   if (!doc?.cropDataUrl || !doc.width || !doc.height) {
     return <p className="text-sm text-muted">من الوثيقة: {source.fieldKey}</p>;
   }
-  const [x0, y0, x1, y1] = source.box;
+  const { window: win, highlight } = evidenceView(source.box, doc.width, doc.height);
   const pct = (v: number, total: number) => `${(v / total) * 100}%`;
   return (
-    <figure className="relative w-full max-w-sm overflow-hidden rounded-lg border border-line">
+    <figure
+      className="relative w-full max-w-md overflow-hidden rounded-lg border border-line"
+      style={{ aspectRatio: `${win.width} / ${win.height}` }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={doc.cropDataUrl} alt={`الوثيقة: ${field.labelAr}`} className="block w-full" />
+      <img
+        src={doc.cropDataUrl}
+        alt={`الوثيقة: ${field.labelAr}`}
+        className="absolute max-w-none"
+        style={{ width: pct(doc.width, win.width), left: pct(-win.left, win.width), top: pct(-win.top, win.height) }}
+      />
       <span
         className="absolute rounded border-2 border-accent bg-accent/10"
-        style={{ left: pct(x0, doc.width), top: pct(y0, doc.height), width: pct(x1 - x0, doc.width), height: pct(y1 - y0, doc.height) }}
+        style={{
+          left: pct(highlight[0] - win.left, win.width),
+          top: pct(highlight[1] - win.top, win.height),
+          width: pct(highlight[2] - highlight[0], win.width),
+          height: pct(highlight[3] - highlight[1], win.height),
+        }}
       />
     </figure>
   );

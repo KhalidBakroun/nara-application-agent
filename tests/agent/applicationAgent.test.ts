@@ -83,6 +83,14 @@ describe("runApplicationAgent", () => {
     expect(stoppedReason).toBe("done");
     expect(JSON.stringify(events[0].output)).toContain("error");
   });
+
+  it("returns the final summary as plain text, without markdown", async () => {
+    const model = scripted([{ text: "## الخلاصة\n**البرنامج المختار:** علوم الحاسوب\n- ينقص: جواز السفر", toolCalls: [] }]);
+
+    const { summaryAr } = await runApplicationAgent(model, ctx, () => {});
+
+    expect(summaryAr).toBe("الخلاصة\nالبرنامج المختار: علوم الحاسوب\nينقص: جواز السفر");
+  });
 });
 
 describe("tools", () => {
