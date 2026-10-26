@@ -85,10 +85,12 @@ all their packs in parallel into one table.
   - sample certificate images rendered from HTML, watermarked "SAMPLE: DEMO DATA";
   - a catalogue of about 12 fictional but realistic programmes.
 - **Branding:**
-  - Nara palette;
-  - the accent is to be confirmed by Khalid (primary blue-teal `#2E7E8F` or secondary fuchsia
-    `#D946EF`);
-  - the UI says "Nara Agent"; the README names the Meta models, as the hackathon requires.
+  - Nara palette with the **primary accent, blue-teal `#2E7E8F`** (Khalid, 26 Oct);
+  - the UI says "Nara Agent";
+  - the README and the demo video name the Meta models (Muse Spark, Muse Voice Transcribe, SAM 3.1). This
+    is a hackathon-only exception to the "Nara AI" naming rule, approved by Khalid on 26 Oct.
+- **Build mode:** Claude builds natively in the session with Khalid, task by task, with one fresh review
+  of the whole branch at the end (Khalid, 26 Oct).
 
 ## Left to the builder
 The page layout details, component split, prompt wording, retry and backoff handling, and the exact
