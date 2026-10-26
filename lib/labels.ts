@@ -14,6 +14,8 @@ export const MISSING_AR: Record<string, string> = {
   graduationYear: "سنة التخرج",
 };
 
+export const STREAM_AR: Record<string, string> = { scientific: "العلمي", literary: "الأدبي", it: "المعلوماتية", other: "آخر" };
+
 export const CONFIDENCE_AR = { high: "ثقة عالية", medium: "ثقة متوسطة", low: "ثقة منخفضة" } as const;
 
 export const NEEDS_COUNSELLOR_AR = "يحتاج مراجعة المرشد";

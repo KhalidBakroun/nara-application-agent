@@ -1,4 +1,5 @@
 import type { ApplicationField, ApplicationPack, Programme, ShortlistItem, TraceEvent } from "@/lib/domain/types";
+import { MISSING_AR } from "@/lib/labels";
 import type { ModelClient } from "@/lib/meta/modelClient";
 import { createTools, type AgentContext, type ToolName } from "./tools";
 
@@ -11,7 +12,7 @@ Work with the tools, step by step:
 3. pick the best programme the student is eligible for (direct entry first, then via foundation year);
 4. fill_application for that programme;
 5. flag_missing for that programme.
-Then reply with a short summary in plain Arabic: the chosen programme, why, and what is still missing. Plain text only, no markdown.
+Then reply with a short summary in plain Arabic: the chosen programme, why, and what is still missing. Write two or three short sentences with normal Arabic punctuation, and no markdown symbols.
 Never invent grades, documents or facts. The catalogue and rules are sample data for a demo.`;
 
 /** The UI shows the summary as plain text, so drop markdown headings, bullets and emphasis if the model adds them. */
@@ -37,7 +38,7 @@ function summaryAr(tool: string, output: unknown, ctx: AgentContext): string {
       return `عبّأتُ ${(output as unknown[]).length} حقول في نموذج الطلب، وكل حقل مرتبط بمصدره.`;
     case "flag_missing": {
       const missing = output as string[];
-      return missing.length ? `ينقص الملف: ${missing.join("، ")}.` : "الملف مكتمل، لا ينقصه شيء.";
+      return missing.length ? `ينقص الملف: ${missing.map((m) => MISSING_AR[m] ?? m).join("، ")}.` : "الملف مكتمل، لا ينقصه شيء.";
     }
     case "convert_tawjihi":
       return `حوّلتُ معدل التوجيهي إلى الفئة ${(output as { band: string }).band}.`;

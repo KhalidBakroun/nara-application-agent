@@ -84,6 +84,16 @@ describe("runApplicationAgent", () => {
     expect(JSON.stringify(events[0].output)).toContain("error");
   });
 
+  it("names missing items in Arabic in the trace", async () => {
+    const events: TraceEvent[] = [];
+    const model = scripted([{ toolCalls: [call("flag_missing", { programmeId: "ashbury-cs" })] }, { text: "تم.", toolCalls: [] }]);
+
+    await runApplicationAgent(model, ctx, (e) => events.push(e));
+
+    expect(events[0].summaryAr).toContain("جواز السفر");
+    expect(events[0].summaryAr).not.toContain("passport");
+  });
+
   it("returns the final summary as plain text, without markdown", async () => {
     const model = scripted([{ text: "## الخلاصة\n**البرنامج المختار:** علوم الحاسوب\n- ينقص: جواز السفر", toolCalls: [] }]);
 

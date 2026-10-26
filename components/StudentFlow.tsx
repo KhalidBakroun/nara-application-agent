@@ -6,6 +6,7 @@ import type { InterviewMessage } from "@/lib/agent/interview";
 import type { ApplicationPack, StudentProfile, TraceEvent } from "@/lib/domain/types";
 import type { ExtractedDocument } from "@/lib/documents/extract";
 import { startRecording } from "@/lib/audio/recorder";
+import { STREAM_AR } from "@/lib/labels";
 import { saveSession } from "@/lib/session";
 
 const FIRST_QUESTION = "مرحباً! أنا وكيل نارا، وسأساعدك في تجهيز طلبك الجامعي. ما اسمك الكامل؟";
@@ -171,8 +172,10 @@ export function StudentFlow() {
 
   const known = Object.entries({
     "الاسم": profile.fullName,
+    "الجنسية": profile.nationality,
     "معدل التوجيهي": profile.tawjihiAverage,
-    "الفرع": profile.stream,
+    "الفرع": profile.stream && (STREAM_AR[profile.stream] ?? profile.stream),
+    "سنة التخرج": profile.graduationYear,
     "التخصص": profile.fieldOfStudy,
     "الدول": profile.targetCountries.join("، ") || undefined,
     "اللغة الإنجليزية": profile.englishTest.type === "none" ? undefined : `${profile.englishTest.type} ${profile.englishTest.score ?? ""}`,
