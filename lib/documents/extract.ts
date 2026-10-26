@@ -13,5 +13,8 @@ export interface ExtractedDocument {
   documentId: string;
   docType: DocType;
   fields: ExtractedField[];
+  /** The cleaned page image the field boxes refer to, with its pixel size. */
   cropDataUrl?: string;
+  width?: number;
+  height?: number;
 }
