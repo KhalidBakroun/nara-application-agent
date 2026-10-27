@@ -8,7 +8,8 @@ import path from "node:path";
 import personas from "../data/personas.json";
 import programmes from "../data/programmes.json";
 import { runApplicationAgent } from "../lib/agent/applicationAgent";
-import type { Programme, StudentProfile } from "../lib/domain/types";
+import { personaProfile } from "../lib/domain/personas";
+import type { Persona, Programme } from "../lib/domain/types";
 import { createMetaModelClient } from "../lib/meta/modelClient";
 
 const keyFile = path.join(homedir(), ".nara-secrets", "meta-model-api-key.txt");
@@ -20,18 +21,7 @@ const id = process.argv[2] ?? "sara";
 const p = personas.find((x) => x.id === id);
 if (!p) throw new Error(`Unknown persona ${id}`);
 
-const profile: StudentProfile = {
-  fullName: p.fullName,
-  nationality: p.nationality,
-  tawjihiAverage: p.tawjihiAverage,
-  stream: p.stream as StudentProfile["stream"],
-  graduationYear: p.graduationYear,
-  englishTest: p.englishTest as StudentProfile["englishTest"],
-  targetCountries: p.targetCountries,
-  fieldOfStudy: p.fieldOfStudy,
-  budgetUsdPerYear: p.budgetUsdPerYear,
-  sources: {},
-};
+const profile = personaProfile(p as Persona);
 
 async function main() {
   const started = Date.now();

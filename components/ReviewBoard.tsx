@@ -92,7 +92,7 @@ export function ReviewBoard({ pack, documents }: Props) {
               />
             ) : (
               <p className="mt-3 text-xl font-medium" dir="auto">
-                {field.value || "—"}
+                {(field.key === "stream" && labels.stream[field.value]) || field.value || "—"}
               </p>
             )}
 

@@ -8,6 +8,7 @@ import type { ExtractedDocument } from "@/lib/documents/extract";
 import { startRecording } from "@/lib/audio/recorder";
 import { useLang } from "@/lib/i18n";
 import { saveSession } from "@/lib/session";
+import { readServerEvents } from "@/lib/sse";
 
 const FIRST_QUESTION = "مرحباً! أنا وكيل نارا، وسأساعدك في تجهيز طلبك الجامعي. ما اسمك الكامل؟";
 
@@ -138,31 +139,22 @@ export function StudentFlow() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profile, documents }),
       });
-      if (!res.ok || !res.body) throw new Error((await res.json()).error ?? "Agent failed");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split("\n\n");
-        buffer = events.pop() ?? "";
-        for (const raw of events) {
-          const event = raw.match(/^event: (.+)$/m)?.[1];
-          const data = JSON.parse(raw.match(/^data: (.+)$/m)?.[1] ?? "null");
-          if (event === "trace") {
-            steps.push(data);
-            setTrace([...steps]);
-          } else if (event === "pack") {
-            setPack(data.pack);
-            setSummary({ ar: data.summaryAr, en: data.summaryEn });
-            saveSession({ profile, documents, trace: steps, pack: data.pack, summaryAr: data.summaryAr, summaryEn: data.summaryEn });
-          } else if (event === "error") {
-            throw new Error(data.message);
-          }
+      if (!res.ok) throw new Error((await res.json()).error ?? "Agent failed");
+      let failure: string | null = null;
+      await readServerEvents(res, (event, payload) => {
+        if (event === "trace") {
+          steps.push(payload as TraceEvent);
+          setTrace([...steps]);
+        } else if (event === "pack") {
+          const data = payload as { pack: ApplicationPack; summaryAr?: string; summaryEn?: string };
+          setPack(data.pack);
+          setSummary({ ar: data.summaryAr, en: data.summaryEn });
+          saveSession({ profile, documents, trace: steps, pack: data.pack, summaryAr: data.summaryAr, summaryEn: data.summaryEn });
+        } else if (event === "error") {
+          failure = (payload as { message: string }).message;
         }
-      }
+      });
+      if (failure) throw new Error(failure);
     } catch (err) {
       setNotice(t("agentStopped", { error: (err as Error).message }));
     } finally {
