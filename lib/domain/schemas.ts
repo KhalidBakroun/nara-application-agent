@@ -93,4 +93,5 @@ export const TraceEventSchema = z.object({
   input: z.unknown(),
   output: z.unknown(),
   summaryAr: z.string(),
+  summaryEn: z.string().optional(),
 });

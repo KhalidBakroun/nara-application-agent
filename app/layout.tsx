@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
+import { LangProvider } from "@/lib/i18n";
 import "./globals.css";
 
 const plexArabic = IBM_Plex_Sans_Arabic({
@@ -20,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${plexArabic.variable} antialiased`}>{children}</body>
+      <body className={`${plexArabic.variable} antialiased`}>
+        <LangProvider>{children}</LangProvider>
+      </body>
     </html>
   );
 }

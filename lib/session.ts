@@ -7,6 +7,7 @@ export interface Session {
   trace: TraceEvent[];
   pack?: ApplicationPack;
   summaryAr?: string;
+  summaryEn?: string;
 }
 
 const KEY = "nara-agent-session";

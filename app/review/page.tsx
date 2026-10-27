@@ -3,33 +3,36 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import programmes from "@/data/programmes.json";
+import { AppHeader } from "@/components/AppHeader";
 import { ReviewBoard } from "@/components/ReviewBoard";
+import { useLang } from "@/lib/i18n";
 import { loadSession, type Session } from "@/lib/session";
 
 export default function ReviewPage() {
+  const { t, lang } = useLang();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   useEffect(() => setSession(loadSession()), []);
 
   if (session === undefined) return null;
   if (!session?.pack) {
     return (
-      <main className="mx-auto max-w-3xl p-8" dir="rtl">
-        <p>لا يوجد ملف للمراجعة بعد.</p>
-        <Link href="/" className="text-accent underline">ابدأ من صفحة الطالب</Link>
+      <main className="mx-auto max-w-3xl space-y-4 p-8">
+        <AppHeader title={t("reviewTitle")} subtitle={t("noPack")} />
+        <Link href="/" className="text-accent underline">
+          {t("startHere")}
+        </Link>
       </main>
     );
   }
 
   const programme = programmes.find((p) => p.id === session.pack!.programmeId);
+  const programmeName = programme
+    ? `${lang === "ar" ? programme.nameAr : programme.name}${lang === "ar" ? "، " : ", "}${programme.university}`
+    : t("noProgramme");
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-8">
-      <header dir="rtl">
-        <h1 className="text-3xl font-bold text-accent">مراجعة المرشد</h1>
-        <p className="mt-1 text-muted">
-          {session.profile.fullName ?? "الطالب"} — {programme ? `${programme.nameAr}، ${programme.university}` : "لم يُحدَّد برنامج"}
-        </p>
-        <p className="text-xs text-muted" dir="ltr">Counsellor review: approve or edit every field. Each value shows where it came from.</p>
-      </header>
+      <AppHeader title={t("reviewTitle")} subtitle={`${session.profile.fullName ?? t("student")} — ${programmeName}`} />
+      <p className="text-sm text-muted">{t("reviewHint")}</p>
       <ReviewBoard pack={session.pack} documents={session.documents} />
     </main>
   );

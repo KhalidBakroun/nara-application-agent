@@ -6,17 +6,16 @@ import type { InterviewMessage } from "@/lib/agent/interview";
 import type { ApplicationPack, StudentProfile, TraceEvent } from "@/lib/domain/types";
 import type { ExtractedDocument } from "@/lib/documents/extract";
 import { startRecording } from "@/lib/audio/recorder";
-import { STREAM_AR } from "@/lib/labels";
+import { useLang } from "@/lib/i18n";
 import { saveSession } from "@/lib/session";
 
 const FIRST_QUESTION = "مرحباً! أنا وكيل نارا، وسأساعدك في تجهيز طلبك الجامعي. ما اسمك الكامل؟";
-const NOT_HEARD = "لم أسمعك جيداً، أعد المحاولة";
 
-const SAMPLE_SETS: Record<string, string[]> = {
-  "لينا": ["/samples/lina-tawjihi.jpg", "/samples/lina-english.jpg"],
-  "عمر": ["/samples/omar-tawjihi.jpg"],
-  "سارة": ["/samples/sara-tawjihi.jpg", "/samples/sara-english.jpg"],
-};
+const SAMPLE_SETS: { ar: string; en: string; paths: string[] }[] = [
+  { ar: "لينا", en: "Lina", paths: ["/samples/lina-tawjihi.jpg", "/samples/lina-english.jpg"] },
+  { ar: "عمر", en: "Omar", paths: ["/samples/omar-tawjihi.jpg"] },
+  { ar: "سارة", en: "Sara", paths: ["/samples/sara-tawjihi.jpg", "/samples/sara-english.jpg"] },
+];
 
 const emptyProfile: StudentProfile = { englishTest: { type: "none" }, targetCountries: [], sources: {} };
 
@@ -31,6 +30,7 @@ function speak(text: string) {
 }
 
 export function StudentFlow() {
+  const { t, lang, labels } = useLang();
   const [history, setHistory] = useState<InterviewMessage[]>([{ role: "agent", text: FIRST_QUESTION }]);
   const [profile, setProfile] = useState<StudentProfile>(emptyProfile);
   const [interviewDone, setInterviewDone] = useState(false);
@@ -41,7 +41,7 @@ export function StudentFlow() {
   const [documents, setDocuments] = useState<ExtractedDocument[]>([]);
   const [trace, setTrace] = useState<TraceEvent[]>([]);
   const [pack, setPack] = useState<ApplicationPack | null>(null);
-  const [summary, setSummary] = useState<string | null>(null);
+  const [summary, setSummary] = useState<{ ar?: string; en?: string } | null>(null);
   const recorderRef = useRef<{ stop: () => Promise<Blob> } | null>(null);
 
   async function answer(text: string) {
@@ -49,7 +49,7 @@ export function StudentFlow() {
     if (!clean) return;
     const nextHistory: InterviewMessage[] = [...history, { role: "student", text: clean }];
     setHistory(nextHistory);
-    setBusy("يفكّر الوكيل…");
+    setBusy(t("thinking"));
     try {
       const res = await fetch("/api/interview", {
         method: "POST",
@@ -63,7 +63,7 @@ export function StudentFlow() {
       setHistory([...nextHistory, { role: "agent", text: body.nextQuestionAr }]);
       speak(body.nextQuestionAr);
     } catch (err) {
-      setNotice(`تعذّر الاتصال بالوكيل: ${(err as Error).message}`);
+      setNotice(t("agentUnreachable", { error: (err as Error).message }));
     } finally {
       setBusy(null);
     }
@@ -76,12 +76,12 @@ export function StudentFlow() {
         recorderRef.current = await startRecording();
         setRecording(true);
       } catch {
-        setNotice("لا يمكن الوصول إلى الميكروفون. يمكنك كتابة إجابتك بدلاً من ذلك.");
+        setNotice(t("noMic"));
       }
       return;
     }
     setRecording(false);
-    setBusy("أستمع إلى إجابتك…");
+    setBusy(t("listening"));
     try {
       const wav = await recorderRef.current!.stop();
       const form = new FormData();
@@ -89,10 +89,10 @@ export function StudentFlow() {
       const res = await fetch("/api/transcribe", { method: "POST", body: form });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Transcription failed");
-      if (body.empty) setNotice(NOT_HEARD);
+      if (body.empty) setNotice(t("notHeard"));
       else await answer(body.transcript);
     } catch (err) {
-      setNotice(`${NOT_HEARD} (${(err as Error).message})`);
+      setNotice(`${t("notHeard")} (${(err as Error).message})`);
     } finally {
       setBusy(null);
     }
@@ -100,7 +100,7 @@ export function StudentFlow() {
 
   async function uploadFiles(files: File[]) {
     if (files.length === 0) return;
-    setBusy("يقرأ الوكيل الوثائق…");
+    setBusy(t("readingDocuments"));
     setNotice(null);
     try {
       const form = new FormData();
@@ -110,7 +110,7 @@ export function StudentFlow() {
       if (!res.ok) throw new Error(body.error ?? "Document reading failed");
       setDocuments((d) => [...d, ...(body.documents as ExtractedDocument[])]);
     } catch (err) {
-      setNotice(`تعذّرت قراءة الوثائق: ${(err as Error).message}`);
+      setNotice(t("documentsFailed", { error: (err as Error).message }));
     } finally {
       setBusy(null);
     }
@@ -127,7 +127,7 @@ export function StudentFlow() {
   }
 
   async function runAgent() {
-    setBusy("يعمل الوكيل على ملفك…");
+    setBusy(t("agentWorking"));
     setTrace([]);
     setPack(null);
     setNotice(null);
@@ -156,42 +156,46 @@ export function StudentFlow() {
             setTrace([...steps]);
           } else if (event === "pack") {
             setPack(data.pack);
-            setSummary(data.summaryAr ?? null);
-            saveSession({ profile, documents, trace: steps, pack: data.pack, summaryAr: data.summaryAr });
+            setSummary({ ar: data.summaryAr, en: data.summaryEn });
+            saveSession({ profile, documents, trace: steps, pack: data.pack, summaryAr: data.summaryAr, summaryEn: data.summaryEn });
           } else if (event === "error") {
             throw new Error(data.message);
           }
         }
       }
     } catch (err) {
-      setNotice(`توقّف الوكيل: ${(err as Error).message}`);
+      setNotice(t("agentStopped", { error: (err as Error).message }));
     } finally {
       setBusy(null);
     }
   }
 
   const known = Object.entries({
-    "الاسم": profile.fullName,
-    "الجنسية": profile.nationality,
-    "معدل التوجيهي": profile.tawjihiAverage,
-    "الفرع": profile.stream && (STREAM_AR[profile.stream] ?? profile.stream),
-    "سنة التخرج": profile.graduationYear,
-    "التخصص": profile.fieldOfStudy,
-    "الدول": profile.targetCountries.join("، ") || undefined,
-    "اللغة الإنجليزية": profile.englishTest.type === "none" ? undefined : `${profile.englishTest.type} ${profile.englishTest.score ?? ""}`,
-    "الميزانية": profile.budgetUsdPerYear ? `${profile.budgetUsdPerYear} دولار` : undefined,
+    [t("name")]: profile.fullName,
+    [t("nationality")]: profile.nationality,
+    [t("tawjihiAverage")]: profile.tawjihiAverage,
+    [t("stream")]: profile.stream && (labels.stream[profile.stream] ?? profile.stream),
+    [t("graduationYear")]: profile.graduationYear,
+    [t("fieldOfStudy")]: profile.fieldOfStudy,
+    [t("countries")]: profile.targetCountries.join(lang === "ar" ? "، " : ", ") || undefined,
+    [t("englishTest")]: profile.englishTest.type === "none" ? undefined : `${profile.englishTest.type} ${profile.englishTest.score ?? ""}`,
+    [t("budget")]: profile.budgetUsdPerYear ? t("usd", { n: profile.budgetUsdPerYear }) : undefined,
   }).filter(([, v]) => v !== undefined && v !== "");
+  const summaryText = summary && (lang === "en" ? summary.en ?? summary.ar : summary.ar);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
       <div className="space-y-6">
         <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-          <h2 className="text-xl font-bold">١. المقابلة الصوتية</h2>
+          <h2 className="text-xl font-bold">{t("interviewTitle")}</h2>
+          {t("interviewNote") && <p className="mt-1 text-sm text-muted">{t("interviewNote")}</p>}
           <ol className="mt-4 space-y-3">
             {history.map((m, i) => (
               <li key={i} className={`rounded-xl p-3 ${m.role === "agent" ? "bg-accent-soft" : "me-8 bg-background"}`}>
-                <span className="text-xs font-bold text-muted">{m.role === "agent" ? "وكيل نارا" : "الطالب"}</span>
-                <p className="mt-1">{m.text}</p>
+                <span className="text-xs font-bold text-muted">{m.role === "agent" ? t("agentName") : t("student")}</span>
+                <p className="mt-1" dir="rtl" lang="ar">
+                  {m.text}
+                </p>
               </li>
             ))}
           </ol>
@@ -202,7 +206,7 @@ export function StudentFlow() {
               disabled={Boolean(busy) && !recording}
               className={`rounded-full px-5 py-3 font-bold text-white ${recording ? "bg-warn" : "bg-accent"} disabled:opacity-40`}
             >
-              {recording ? "■ إيقاف وإرسال" : "🎙 تحدّث"}
+              {recording ? t("stopAndSend") : t("speak")}
             </button>
             <form
               className="flex flex-1 gap-2"
@@ -215,19 +219,20 @@ export function StudentFlow() {
               <input
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
-                placeholder="أو اكتب إجابتك هنا"
+                placeholder={t("typePlaceholder")}
+                dir="auto"
                 className="flex-1 rounded-full border border-line px-4"
               />
               <button type="submit" disabled={Boolean(busy)} className="rounded-full border border-accent px-4 text-accent disabled:opacity-40">
-                إرسال
+                {t("send")}
               </button>
             </form>
           </div>
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-          <h2 className="text-xl font-bold">٢. صوّر وثائقك</h2>
-          <p className="mt-1 text-sm text-muted">شهادة التوجيهي، جواز السفر، نتيجة اختبار اللغة…</p>
+          <h2 className="text-xl font-bold">{t("documentsTitle")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("documentsHint")}</p>
           <input
             type="file"
             accept="image/*"
@@ -236,10 +241,10 @@ export function StudentFlow() {
             onChange={(e) => void uploadFiles(Array.from(e.target.files ?? []))}
           />
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
-            <span className="text-muted">وثائق تجريبية:</span>
-            {Object.entries(SAMPLE_SETS).map(([name, paths]) => (
-              <button key={name} type="button" className="rounded-full border border-line px-3 py-1" onClick={() => void loadSamples(paths)}>
-                {name}
+            <span className="text-muted">{t("sampleDocuments")}</span>
+            {SAMPLE_SETS.map((s) => (
+              <button key={s.en} type="button" className="rounded-full border border-line px-3 py-1" onClick={() => void loadSamples(s.paths)}>
+                {lang === "ar" ? s.ar : s.en}
               </button>
             ))}
           </div>
@@ -247,7 +252,7 @@ export function StudentFlow() {
             <ul className="mt-3 space-y-1 text-sm">
               {documents.map((d) => (
                 <li key={d.documentId}>
-                  ✓ {d.docType} — {d.fields.length} حقول مقروءة
+                  ✓ {labels.docType[d.docType] ?? d.docType} — {t("fieldsRead", { n: d.fields.length })}
                 </li>
               ))}
             </ul>
@@ -255,32 +260,36 @@ export function StudentFlow() {
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-          <h2 className="text-xl font-bold">٣. دع الوكيل يعمل</h2>
+          <h2 className="text-xl font-bold">{t("agentTitle")}</h2>
           <button
             type="button"
             onClick={runAgent}
             disabled={Boolean(busy) || (!interviewDone && documents.length === 0)}
             className="mt-3 rounded-xl bg-accent px-6 py-3 font-bold text-white disabled:opacity-40"
           >
-            شغّل وكيل نارا
+            {t("runAgent")}
           </button>
           {trace.length > 0 && (
             <ol className="mt-4 space-y-2">
-              {trace.map((t) => (
-                <li key={t.step} className="rounded-lg border border-line p-3">
+              {trace.map((s) => (
+                <li key={s.step} className="rounded-lg border border-line p-3">
                   <span className="font-mono text-xs text-muted" dir="ltr">
-                    {t.step}. {t.tool}
+                    {s.step}. {s.tool}
                   </span>
-                  <p>{t.summaryAr}</p>
+                  <p>{lang === "en" ? s.summaryEn ?? s.summaryAr : s.summaryAr}</p>
                 </li>
               ))}
             </ol>
           )}
           {pack && (
             <div className="mt-4 rounded-xl bg-ok-soft p-4">
-              {summary && <p className="mb-3">{summary}</p>}
+              {summaryText && (
+                <p className="mb-3" dir="auto">
+                  {summaryText}
+                </p>
+              )}
               <Link href="/review" className="inline-block rounded-lg bg-ok px-5 py-2 font-bold text-white">
-                افتح مراجعة المرشد ←
+                {t("openReview")}
               </Link>
             </div>
           )}
@@ -289,15 +298,17 @@ export function StudentFlow() {
 
       <aside className="space-y-4">
         <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-          <h2 className="text-lg font-bold">ما يعرفه الوكيل عنك</h2>
+          <h2 className="text-lg font-bold">{t("knownTitle")}</h2>
           {known.length === 0 ? (
-            <p className="mt-2 text-sm text-muted">لا شيء بعد.</p>
+            <p className="mt-2 text-sm text-muted">{t("nothingYet")}</p>
           ) : (
             <dl className="mt-3 space-y-2 text-sm">
               {known.map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-2 border-b border-line pb-1">
                   <dt className="text-muted">{k}</dt>
-                  <dd className="font-medium">{String(v)}</dd>
+                  <dd className="font-medium" dir="auto">
+                    {String(v)}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -305,9 +316,7 @@ export function StudentFlow() {
         </section>
         {busy && <p className="rounded-xl bg-accent-soft p-3 text-accent">{busy}</p>}
         {notice && <p className="rounded-xl bg-warn-soft p-3 text-warn">{notice}</p>}
-        <p className="text-xs text-muted">
-          بيانات تجريبية للعرض فقط: الجامعات وقواعد القبول في هذا العرض افتراضية. Sample data for the demo.
-        </p>
+        <p className="text-xs text-muted">{t("sampleNote")}</p>
       </aside>
     </div>
   );
