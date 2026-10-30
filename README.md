@@ -5,6 +5,9 @@ university application pack. A school counsellor then checks the pack field by f
 Meta's models and was made for the Meta Global AI Developer Hackathon 2026 (startup track) by Nara
 Abroad.
 
+- **Live product:** https://nara-application-agent.vercel.app (class mode: `/class`)
+- **Code:** https://github.com/KhalidBakroun/nara-application-agent
+
 > **Sample data for the demo.** The universities, programmes and admission rules in this app are
 > fictional. The sample certificate images are synthetic and carry the watermark "SAMPLE: DEMO DATA".
 > No real student data is used anywhere.
